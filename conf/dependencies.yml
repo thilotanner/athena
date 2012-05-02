@@ -1,4 +1,11 @@
-# Application dependencies
-
 require:
     - play
+    - postgresql -> postgresql 9.1-901-1.jdbc4
+    - org.elasticsearch -> elasticsearch 0.19.2
+
+repositories:
+    - sonatype:
+        type:       iBiblio
+        root:       "https://oss.sonatype.org/content/repositories/releases/"
+        contains:
+            - org.elasticsearch -> *
