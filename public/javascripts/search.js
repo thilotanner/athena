@@ -1,5 +1,5 @@
 $(document).ready(function() {
-    $('td[id|="document"]').click(function() {
-        $(this).children("div").slideToggle();
+    $('span[id|="document"]').click(function() {
+        $(this).siblings("div").slideToggle();
     });
 });
