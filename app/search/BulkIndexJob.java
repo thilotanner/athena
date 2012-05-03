@@ -1,73 +1,54 @@
 package search;
 
+import models.Document;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.xcontent.XContentFactory;
+import org.hibernate.ScrollMode;
+import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
-import org.hibernate.jdbc.Work;
+import org.hibernate.StatelessSession;
 import play.Logger;
 import play.Play;
 import play.db.jpa.JPA;
 import play.jobs.Job;
-
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-
 public class BulkIndexJob extends Job
 {
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 1000;
 
     @Override
     public void doJob() throws Exception
     {
+        long numberOfDocuments = Document.count();
+
         Session hibernateSession = (Session) JPA.em().getDelegate();
 
-        hibernateSession.doWork(new Work() {
-            @Override
-            public void execute(Connection connection) throws SQLException
-            {
-                Statement statement = connection.createStatement();
-                ResultSet rs = statement.executeQuery("SELECT * FROM Document");
+        StatelessSession session = hibernateSession.getSessionFactory().openStatelessSession();
 
-                Client client = Play.plugin(ElasticSearchPlugin.class).client();
-                BulkRequestBuilder bulkRequest = client.prepareBulk();
+        Client client = Play.plugin(ElasticSearchPlugin.class).client();
 
-                int count = 0;
-                while(rs.next()) {
+        for(int i = 0; i < numberOfDocuments; i += BATCH_SIZE) {
+            BulkRequestBuilder bulkRequest = client.prepareBulk();
 
-                    try {
-                        bulkRequest.add(client.prepareIndex("documents", "document", rs.getString("id"))
-                            .setSource(XContentFactory.jsonBuilder()
-                                .startObject()
-                                    .field("date", rs.getDate("date"))
-                                    .field("title", rs.getString("title"))
-                                    .field("text", rs.getString("text"))
-                                .endObject()));
+            ScrollableResults results = session.createCriteria(Document.class)
+                    .setFirstResult(i)
+                    .setMaxResults(BATCH_SIZE)
+                    .setReadOnly(true).scroll(ScrollMode.FORWARD_ONLY);
 
-                        count++;
-                    } catch (IOException e) {
-                        Logger.warn(e, "Error while create source");
-                    }
+            while(results.next()) {
+                Document document = (Document) results.get(0);
 
-                    if(count == BATCH_SIZE) {
-                        bulkRequest.execute();
-
-                        bulkRequest = client.prepareBulk();
-
-                        count = 0;
-
-                        Logger.info(rs.getRow() + " document indexed");
-                    }
-                }
-
-                bulkRequest.execute();
-
-                rs.close();
+                bulkRequest.add(client.prepareIndex("documents", "document", document.id.toString())
+                        .setSource(DocumentSourceBuilder.source(document)));
             }
-        });
+
+            bulkRequest.execute();
+
+            results.close();
+
+            Logger.info(String.format("%d documents indexed", i + BATCH_SIZE));
+        }
+
+        session.close();
 
         hibernateSession.close();
     }

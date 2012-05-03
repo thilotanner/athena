@@ -1,0 +1,23 @@
+#{extends 'main.html' /}
+#{set title:'Home' /}
+
+<h1>Search</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Title</th>
+        </tr>
+    </thead>
+    <tbody>
+        #{list items:documents, as:'document'}
+        <tr>
+            <td>${document.id}</td>
+            <td>${document.date}</td>
+            <td>${document.title}</td>
+        </tr>
+        #{/list}
+    </tbody>
+</table>
