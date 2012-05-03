@@ -24,7 +24,7 @@
     <tbody>
         <tr>
             <td>${thisDocument.id}</td>
-            <td>${thisDocument.date}</td>
+            <td>${thisDocument.date.format()}</td>
             <td id="document-${thisDocument.id}">
                 <span class="title">${thisDocument.title}</span>
                 <div style="display: none;">${thisDocument.text}</div>
@@ -49,7 +49,7 @@
         #{list items:documents, as:'document'}
         <tr>
             <td>${document.id}</td>
-            <td>${document.date}</td>
+            <td>${document.date.format()}</td>
             <td>
                 <div class="progress">
                     <div class="bar" style="width: ${document.scorePercentage}%;"></div>

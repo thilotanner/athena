@@ -31,10 +31,8 @@ endPage = lastPage;
 
 def pageLink = {
 args = new java.util.HashMap<String, Object>();
-args.put('filter', params.get("filter"));
 args.put('search', params.get("search"));
-args.put('orderBy', params.get("orderBy"));
-args.put('order', params.get("order"));
+args.put('id', params.get("id"));
 args.put('page', it);
 if(_args != null) {
 args.putAll(_args);
