@@ -1,0 +1,68 @@
+#{extends 'main.html' /}
+#{set title:'Documents' /}
+
+#{set 'moreScripts'}
+<script src="@{'/public/javascripts/search.js'}" type="text/javascript" charset="${_response_encoding}"></script>
+#{/set}
+
+<div class="page-header">
+    <h1>Documents</h1>
+</div>
+
+#{searchForm search:search /}
+
+#{if thisDocument}
+<h2>This</h2>
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th style="width: 60px;">ID</th>
+        <th style="width: 355px;">Date</th>
+        <th>Title</th>
+    </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>${thisDocument.id}</td>
+            <td>${thisDocument.date}</td>
+            <td id="document-${thisDocument.id}">
+                <span class="title">${thisDocument.title}</span>
+                <div style="display: none;">${thisDocument.text}</div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<h2>More like this</h2>
+#{/if}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th style="width: 60px;">ID</th>
+            <th style="width: 220px;">Date</th>
+            <th style="width: 120px;">Score</th>
+            <th>Title</th>
+            <th style="width: 20px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        #{list items:documents, as:'document'}
+        <tr>
+            <td>${document.id}</td>
+            <td>${document.date}</td>
+            <td>
+                <div class="progress">
+                    <div class="bar" style="width: ${document.scorePercentage}%;"></div>
+                </div>
+            </td>
+            <td id="document-${document.id}">
+                <span class="title">${document.title}</span>
+                <div style="display: none;">${document.text}</div>
+            </td>
+            <td><a href="@{moreLikeThis(document.id)}">moreLikeThis</a></td>
+        </tr>
+        #{/list}
+    </tbody>
+</table>
+
+#{pagination pageSize:pageSize, count:count /}

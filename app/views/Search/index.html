@@ -1,0 +1,14 @@
+#{extends 'main.html' /}
+#{set title:'Search' /}
+
+<div class="page-header">
+    <h1>Search</h1>
+</div>
+
+<p>
+<strong><a href="@{Search.elasticsearch()}">ElasticSearch Head</a></strong>
+</p>
+
+<div class="well">
+    <a href="@{indexDocuments}" class="btn btn-primary">Index Documents</a>
+</div>

@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.Lob;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import java.util.Date;
 
 @Entity
@@ -20,4 +21,7 @@ public class Document extends Model
 
     @Lob
     public String text;
+
+    @Transient
+    public int scorePercentage;
 }

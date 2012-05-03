@@ -1,11 +1,11 @@
 package controllers;
 
-
 import models.Document;
+import org.elasticsearch.action.mlt.MoreLikeThisRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.bootstrap.ElasticSearch;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.Requests;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -13,30 +13,33 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import play.Play;
 import play.mvc.Controller;
-import search.BulkIndexJob;
 import search.ElasticSearchPlugin;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-public class Application extends Controller
+public class Documents extends Controller
 {
+    private static final int PAGE_SIZE = 10;
 
     public static void index()
     {
         render();
     }
 
-    public static void search(String search)
+    public static void search(String search, int page)
     {
+        if(page < 1) {
+            page = 1;
+        }
+
         BoolQueryBuilder qb = QueryBuilders.boolQuery();
         if(search == null || search.isEmpty()) {
             qb.must(QueryBuilders.matchAllQuery());
         } else {
             for(String searchPart : search.split("\\s+")) {
-                qb.must(QueryBuilders.queryString(String.format("*%s*", searchPart)).defaultField("_all"));
+                qb.must(QueryBuilders.queryString(String.format("%s*", searchPart)).defaultField("_all"));
             }
         }
 
@@ -45,10 +48,37 @@ public class Application extends Controller
         SearchResponse response = client.prepareSearch("documents")
                 .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                 .setQuery(qb)
-                .setFrom(0).setSize(20)
+                .setFrom((page - 1) * PAGE_SIZE).setSize(PAGE_SIZE)
                 .execute()
                 .actionGet();
 
+        renderArgs.put("search", search);
+
+        renderSearchResponse(response);
+    }
+
+    public static void moreLikeThis(Long id, int page)
+    {
+        if(page < 1) {
+            page = 1;
+        }
+
+        Client client = Play.plugin(ElasticSearchPlugin.class).client();
+        MoreLikeThisRequest request = Requests.moreLikeThisRequest("documents");
+        request.searchFrom((page - 1) * PAGE_SIZE);
+        request.searchSize(PAGE_SIZE);
+        request.type("document");
+        request.id(id.toString());
+        SearchResponse response = client.moreLikeThis(request)
+                .actionGet();
+
+        renderArgs.put("thisDocument", Document.findById(id));
+
+        renderSearchResponse(response);
+    }
+
+    private static void renderSearchResponse(SearchResponse response)
+    {
         DateTimeFormatter dateTimeFormatter = ISODateTimeFormat.dateTime();
 
         List<Document> documents = new ArrayList<Document>(response.getHits().getHits().length);
@@ -60,23 +90,16 @@ public class Application extends Controller
 
             document.date = dateTimeFormatter.parseDateTime((String) hitMap.get("date")).toDate();
             document.title = (String) hitMap.get("title");
-            //document.text = (String) hitMap.get("text");
+            document.text = (String) hitMap.get("text");
+
+            document.scorePercentage = (int) ((1.0 - (1.0 / (1.0 + hit.getScore()))) * 100);
 
             documents.add(document);
         }
 
-        render(documents);
-    }
+        renderArgs.put("count", response.getHits().totalHits());
+        renderArgs.put("pageSize", PAGE_SIZE);
 
-    public static void elasticsearch()
-    {
-        render();
-    }
-
-    public static void indexDocuments()
-    {
-        BulkIndexJob bulkIndexJob = new BulkIndexJob();
-        bulkIndexJob.now();
-        index();
+        render("@search", documents);
     }
 }
