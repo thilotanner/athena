@@ -2,6 +2,7 @@ require:
     - play
     - postgresql -> postgresql 9.1-901-1.jdbc4
     - org.elasticsearch -> elasticsearch 0.19.2
+    - org.carrot2 -> carrot2-core 3.5.3
 
 repositories:
     - sonatype:
@@ -9,3 +10,4 @@ repositories:
         root:       "https://oss.sonatype.org/content/repositories/releases/"
         contains:
             - org.elasticsearch -> *
+            - org.carrot2 -> *
