@@ -1,5 +1,6 @@
 package controllers;
 
+import clustering.Carrot2Cluster;
 import models.Document;
 import org.elasticsearch.action.mlt.MoreLikeThisRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -61,13 +62,17 @@ public class Documents extends Controller
                 .execute()
                 .actionGet();
 
-        renderArgs.put("search", search);
-
         List<Document> documents = extractDocuments(response);
 
         if("xml".equals(format)) {
             renderXML(documents, search);
         }
+
+        // cluster documents
+        Carrot2Cluster cluster = new Carrot2Cluster(documents);
+        cluster.cluster();
+
+        renderArgs.put("search", search);
 
         renderArgs.put("count", response.getHits().totalHits());
         renderArgs.put("pageSize", pageSize);
@@ -97,12 +102,15 @@ public class Documents extends Controller
 
         Document thisDocument = Document.findById(id);
 
-
         List<Document> documents = extractDocuments(response);
 
         if("xml".equals(format)) {
             renderXML(documents, thisDocument.title);
         }
+
+        // cluster documents
+        Carrot2Cluster cluster = new Carrot2Cluster(documents);
+        cluster.cluster();
 
         renderArgs.put("thisDocument", thisDocument);
 
